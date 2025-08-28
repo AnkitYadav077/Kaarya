@@ -58,18 +58,15 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Location> locationRedisTemplate(
-            RedisConnectionFactory factory,
-            ObjectMapper objectMapper) {
-
+    public RedisTemplate<String, Location> locationRedisTemplate(RedisConnectionFactory factory, ObjectMapper objectMapper) {
         RedisTemplate<String, Location> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         template.setKeySerializer(new StringRedisSerializer());
 
         Jackson2JsonRedisSerializer<Location> serializer =
                 new Jackson2JsonRedisSerializer<>(objectMapper, Location.class);
-        template.setValueSerializer(serializer);
 
+        template.setValueSerializer(serializer);
         return template;
     }
 }

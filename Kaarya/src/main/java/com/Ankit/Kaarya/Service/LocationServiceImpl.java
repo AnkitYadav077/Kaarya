@@ -31,6 +31,7 @@ public class LocationServiceImpl implements LocationService {
     @Override
     @Cacheable(value = "nearbyIndustriesByLocation", key = "{#location, #radiusKm}")
     public List<Industry> getNearbyIndustries(Location location, double radiusKm) {
+        // Do NOT convert to meters here, default method already does it
         return locationRepo.findNearbyIndustriesByLocation(location, radiusKm);
     }
 }

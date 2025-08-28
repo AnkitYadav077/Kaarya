@@ -1,3 +1,4 @@
+
 package com.Ankit.Kaarya.Service;
 
 import com.Ankit.Kaarya.Entity.Industry;
@@ -104,7 +105,6 @@ public class JobServiceImpl implements JobService {
     @Override
     @Cacheable(value = "filteredJobs", key = "{#title, #workDate, #location, #radiusKm}")
     public List<JobsDto> filterJobs(String title, LocalDate workDate, Location location, Double radiusKm) {
-        // Prevent negative or zero radius
         if (radiusKm != null && radiusKm <= 0) {
             throw new IllegalArgumentException("Radius must be greater than 0 km");
         }

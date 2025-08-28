@@ -131,13 +131,14 @@ public class JobsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workDate,
             @RequestParam(required = false) Double radiusKm) {
 
-        Long userId = getAuthenticatedUserId();
-        Location location = null;
+        Long userId = getAuthenticatedUserId(); // Your method to get user ID
         Users user = userService.getUserById(userId);
+
         if (user.getLocation() == null) {
             throw new IllegalArgumentException("User has no location set");
         }
-        location = user.getLocation();
+
+        Location location = user.getLocation();
 
         List<JobsDto> filteredJobs = service.filterJobs(title, workDate, location, radiusKm);
         return ResponseEntity.ok(filteredJobs);
