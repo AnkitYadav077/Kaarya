@@ -17,21 +17,24 @@ public class ChatSecurityService {
 
     public boolean hasAccessToRoom(String roomId, Authentication auth) {
         try {
+            // Extract application ID from the roomId format "chat_<applicationId>"
             if (!roomId.startsWith("chat_")) {
                 throw new ChatAccessDeniedException("Invalid room ID format: " + roomId);
             }
 
-            Long applicationId = Long.parseLong(roomId.split("_")[1]);
+            Long applicationId = Long.parseLong(roomId.substring(5)); // Remove "chat_" prefix
             JobApplication application = jobApplicationRepo.findById(applicationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
 
             Long authenticatedId = ((OtpAuthenticationToken) auth).getId();
 
+            // Check if authenticated user is the applicant
             if (application.getUsers() != null &&
                     application.getUsers().getUserId().equals(authenticatedId)) {
                 return true;
             }
 
+            // Check if authenticated user is the industry owner
             if (application.getJobs() != null &&
                     application.getJobs().getIndustry() != null &&
                     application.getJobs().getIndustry().getIndustryId().equals(authenticatedId)) {

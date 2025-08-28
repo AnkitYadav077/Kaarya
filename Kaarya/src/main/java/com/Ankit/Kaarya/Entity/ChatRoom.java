@@ -24,6 +24,8 @@ public class ChatRoom {
 
     @PrePersist
     public void generateRoomId() {
-        this.roomId = "chat_" + this.application.getJobApplicationId();
+        if (this.application != null && this.application.getJobApplicationId() != null) {
+            this.roomId = "chat_" + this.application.getJobApplicationId();
+        }
     }
 }

@@ -22,7 +22,7 @@ public class ChatService {
 
     public void saveMessage(ChatMessage message) {
         message.setTimestamp(LocalDateTime.now());
-        String redisKey = "chat_room:" + message.getRoomId();
+        String redisKey = "chat_room:" + message.getRoomId(); // This will be "chat_room:chat_2"
 
         redisTemplate.opsForList().rightPush(redisKey, message);
         redisTemplate.expire(redisKey, 7, TimeUnit.DAYS);
@@ -31,6 +31,7 @@ public class ChatService {
     public List<ChatMessage> getMessageHistory(String roomId) {
         return redisTemplate.opsForList().range("chat_room:" + roomId, 0, -1);
     }
+
 
     public ChatRoom createChatRoom(JobApplication application) {
         ChatRoom chatRoom = new ChatRoom();
