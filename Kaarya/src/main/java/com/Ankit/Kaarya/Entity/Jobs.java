@@ -1,6 +1,7 @@
 package com.Ankit.Kaarya.Entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -21,17 +22,23 @@ public class Jobs {
     @Column(name = "ID")
     private Long jobId;
 
+
     @Column(name = "TITLE")
     private String title;
+
 
     @Column(name = "NO. OF WORKERS")
     private int requiredWorkers;
 
+
+
     @Column(name = "DESCRIPTION")
     private String description;
 
+
     @Column(name = "AMOUNT")
     private Double payAmount;
+
 
     @Column(name = "WORK DATE")
     private LocalDateTime workDate;

@@ -34,11 +34,16 @@ public class IndustryServiceImpl implements IndustryService {
     @Override
     @CacheEvict(value = "industries", allEntries = true)
     public IndustryDto registerIndustry(IndustryDto industryDto, String role) {
-        Industry industry = dtoToIndustry(industryDto);
-        industry.setRole(role);
-        Industry savedIndustry = industryRepo.save(industry);
-        return industryToDto(savedIndustry);
+        try {
+            Industry industry = dtoToIndustry(industryDto);
+            industry.setRole(role);
+            Industry savedIndustry = industryRepo.save(industry);
+            return industryToDto(savedIndustry);
+        } catch (Exception e) {
+            throw new RuntimeException("Error registering industry: " + e.getMessage(), e);
+        }
     }
+
 
     @Override
     @Cacheable(value = "industry", key = "#industryId")
@@ -107,14 +112,20 @@ public class IndustryServiceImpl implements IndustryService {
 
     @Override
     @CacheEvict(value = {"industry", "industries"}, key = "#industryId")
-    public IndustryDto uploadIndustryImage(Long industryId, MultipartFile file) throws IOException {
-        Industry industry = industryRepo.findById(industryId.intValue())
-                .orElseThrow(() -> new ResourceNotFoundException("Industry", "id", industryId));
+    public IndustryDto uploadIndustryImage(Long industryId, MultipartFile file) {
+        try {
+            Industry industry = industryRepo.findById(industryId.intValue())
+                    .orElseThrow(() -> new ResourceNotFoundException("Industry", "id", industryId));
 
-        String imageUrl = imageService.uploadImage(file);
-        industry.setImageUrl(imageUrl);
-        Industry updatedIndustry = industryRepo.save(industry);
-        return industryToDto(updatedIndustry);
+            String imageUrl = imageService.uploadImage(file);
+            industry.setImageUrl(imageUrl);
+            Industry updatedIndustry = industryRepo.save(industry);
+            return industryToDto(updatedIndustry);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error uploading industry image: " + e.getMessage(), e);
+        }
     }
 
     public IndustryDto industryToDto(Industry industry) {

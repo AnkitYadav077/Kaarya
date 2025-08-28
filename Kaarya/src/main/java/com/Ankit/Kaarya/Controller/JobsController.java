@@ -8,6 +8,7 @@ import com.Ankit.Kaarya.Payloads.IndustryJobsResponseDto;
 import com.Ankit.Kaarya.Payloads.JobsDto;
 import com.Ankit.Kaarya.Security.OtpAuthenticationToken;
 import com.Ankit.Kaarya.Service.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -45,7 +46,7 @@ public class JobsController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_INDUSTRY')")
-    public ResponseEntity<JobsDto> newJobs(@RequestBody JobsDto jobsDto) {
+    public ResponseEntity<JobsDto> newJobs(@Valid @RequestBody JobsDto jobsDto) {
         Long industryId = getAuthenticatedIndustryId();
         JobsDto createdJob = service.createJob(jobsDto, industryId.intValue());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdJob);

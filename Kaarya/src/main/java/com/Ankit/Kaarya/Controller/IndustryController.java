@@ -3,6 +3,7 @@ package com.Ankit.Kaarya.Controller;
 import com.Ankit.Kaarya.Payloads.IndustryDto;
 import com.Ankit.Kaarya.Security.OtpAuthenticationToken;
 import com.Ankit.Kaarya.Service.IndustryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,7 +30,7 @@ public class IndustryController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<IndustryDto> registerIndustry(@RequestBody IndustryDto industryDto) {
+    public ResponseEntity<IndustryDto> registerIndustry(@Valid @RequestBody IndustryDto industryDto) {
         IndustryDto createdIndustry = industryService.registerIndustry(industryDto, "ROLE_INDUSTRY");
         return ResponseEntity.status(HttpStatus.CREATED).body(createdIndustry);
     }

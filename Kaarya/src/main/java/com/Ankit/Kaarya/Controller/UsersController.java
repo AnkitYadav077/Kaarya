@@ -10,8 +10,10 @@ import com.Ankit.Kaarya.Service.JobService;
 import com.Ankit.Kaarya.Service.RedisLocationService;
 import com.Ankit.Kaarya.Service.UserLocationService;
 import com.Ankit.Kaarya.Service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +42,7 @@ public class UsersController {
 
 
     @PostMapping
-    public ResponseEntity<UsersDto> registerUser(@RequestBody UsersDto usersDto) {
+    public ResponseEntity<UsersDto> registerUser(@Valid @RequestBody UsersDto usersDto) {
         // Call service to register user; assigns ROLE_USER as default role
         UsersDto createdUser = userService.registerUser(usersDto, "ROLE_USER");
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);

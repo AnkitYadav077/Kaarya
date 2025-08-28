@@ -32,15 +32,21 @@ public class JobServiceImpl implements JobService {
     @Override
     @CacheEvict(value = {"jobs", "industryJobs"}, allEntries = true)
     public JobsDto createJob(JobsDto jobsDto, Integer industryId) {
-        Industry industry = industryRepo.findById(industryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Industry", "id", industryId));
+        try {
+            Industry industry = industryRepo.findById(industryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Industry", "id", industryId));
 
-        Jobs jobs = dtoToJob(jobsDto);
-        jobs.setIndustry(industry);
-        jobs.setCreatedAt(LocalDateTime.now());
+            Jobs jobs = dtoToJob(jobsDto);
+            jobs.setIndustry(industry);
+            jobs.setCreatedAt(LocalDateTime.now());
 
-        Jobs savedJob = jobRepo.save(jobs);
-        return jobToDto(savedJob);
+            Jobs savedJob = jobRepo.save(jobs);
+            return jobToDto(savedJob);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating job: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -105,28 +111,34 @@ public class JobServiceImpl implements JobService {
     @Override
     @Cacheable(value = "filteredJobs", key = "{#title, #workDate, #location, #radiusKm}")
     public List<JobsDto> filterJobs(String title, LocalDate workDate, Location location, Double radiusKm) {
-        if (radiusKm != null && radiusKm <= 0) {
-            throw new IllegalArgumentException("Radius must be greater than 0 km");
-        }
-
-        LocalDateTime workDateTime = (workDate != null) ? workDate.atStartOfDay() : null;
-        List<Long> industryIds = null;
-
-        if (radiusKm != null && radiusKm > 0) {
-            List<Industry> nearbyIndustries = locationService.getNearbyIndustries(location, radiusKm);
-            industryIds = nearbyIndustries.stream()
-                    .map(Industry::getIndustryId)
-                    .collect(Collectors.toList());
-
-            if (industryIds.isEmpty()) {
-                return new ArrayList<>();
+        try {
+            if (radiusKm != null && radiusKm <= 0) {
+                throw new IllegalArgumentException("Radius must be greater than 0 km");
             }
-        }
 
-        List<Jobs> filteredJobs = jobRepo.findFilteredJobs(title, workDateTime, industryIds);
-        return filteredJobs.stream()
-                .map(this::jobToDto)
-                .collect(Collectors.toList());
+            LocalDateTime workDateTime = (workDate != null) ? workDate.atStartOfDay() : null;
+            List<Long> industryIds = null;
+
+            if (radiusKm != null && radiusKm > 0) {
+                List<Industry> nearbyIndustries = locationService.getNearbyIndustries(location, radiusKm);
+                industryIds = nearbyIndustries.stream()
+                        .map(Industry::getIndustryId)
+                        .collect(Collectors.toList());
+
+                if (industryIds.isEmpty()) {
+                    return new ArrayList<>();
+                }
+            }
+
+            List<Jobs> filteredJobs = jobRepo.findFilteredJobs(title, workDateTime, industryIds);
+            return filteredJobs.stream()
+                    .map(this::jobToDto)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error filtering jobs: " + e.getMessage(), e);
+        }
     }
 
 

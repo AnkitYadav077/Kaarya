@@ -2,7 +2,9 @@ package com.Ankit.Kaarya.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.validator.constraints.URL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +24,14 @@ public class Industry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long industryId;
 
+
     @Column(name = "NAME")
     private String name;
 
+
     @Column(name = "EMAIL")
     private String email;
+
 
     @Column(name = "PHONE NO.")
     private String phoneNo;
@@ -34,8 +39,10 @@ public class Industry {
     @Column(name = "ROLE")
     private String role;
 
+
     @Column(name = "IMAGE_URL", length = 500)
     private String imageUrl;
+
 
     @Embedded
     @AttributeOverrides({

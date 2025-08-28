@@ -1,6 +1,8 @@
 package com.Ankit.Kaarya.Service;
 
 import com.Ankit.Kaarya.Entity.JobApplication;
+import com.Ankit.Kaarya.Exceptions.ChatAccessDeniedException;
+import com.Ankit.Kaarya.Exceptions.ResourceNotFoundException;
 import com.Ankit.Kaarya.Repo.JobApplicationRepo;
 import com.Ankit.Kaarya.Security.OtpAuthenticationToken;
 import lombok.RequiredArgsConstructor;
@@ -16,21 +18,19 @@ public class ChatSecurityService {
     public boolean hasAccessToRoom(String roomId, Authentication auth) {
         try {
             if (!roomId.startsWith("chat_")) {
-                return false;
+                throw new ChatAccessDeniedException("Invalid room ID format: " + roomId);
             }
 
             Long applicationId = Long.parseLong(roomId.split("_")[1]);
             JobApplication application = jobApplicationRepo.findById(applicationId)
-                    .orElseThrow(() -> new RuntimeException("Application not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
 
             Long authenticatedId = ((OtpAuthenticationToken) auth).getId();
-
 
             if (application.getUsers() != null &&
                     application.getUsers().getUserId().equals(authenticatedId)) {
                 return true;
             }
-
 
             if (application.getJobs() != null &&
                     application.getJobs().getIndustry() != null &&
@@ -38,9 +38,13 @@ public class ChatSecurityService {
                 return true;
             }
 
-            return false;
+            throw new ChatAccessDeniedException("User does not have access to this chat room");
+        } catch (ResourceNotFoundException | ChatAccessDeniedException e) {
+            throw e;
+        } catch (NumberFormatException e) {
+            throw new ChatAccessDeniedException("Invalid room ID format: " + roomId);
         } catch (Exception e) {
-            return false;
+            throw new ChatAccessDeniedException("Error validating chat room access: " + e.getMessage());
         }
     }
 }

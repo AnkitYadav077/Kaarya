@@ -1,6 +1,7 @@
 package com.Ankit.Kaarya.Service;
 
 import com.Ankit.Kaarya.Entity.*;
+import com.Ankit.Kaarya.Exceptions.PaymentProcessingException;
 import com.Ankit.Kaarya.Exceptions.ResourceNotFoundException;
 import com.Ankit.Kaarya.Payloads.PaymentDto;
 import com.Ankit.Kaarya.Repo.IndustryRepo;
@@ -37,16 +38,16 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     @CacheEvict(value = {"payments", "userPayments"}, allEntries = true)
-    public PaymentDto createPaymentOrder(PaymentDto paymentRequestDTO) throws Exception {
+    public PaymentDto createPaymentOrder(PaymentDto paymentRequestDTO) {
         log.info("Creating payment order for IndustryId: {}", paymentRequestDTO.getIndustryId());
 
-        Industry industry = industryRepository.findById(Math.toIntExact(paymentRequestDTO.getIndustryId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Industry", "id", paymentRequestDTO.getIndustryId()));
-
-        double amount = paymentRequestDTO.getAmount();
-        int totalAmountInPaise = (int) (amount * 100);
-
         try {
+            Industry industry = industryRepository.findById(Math.toIntExact(paymentRequestDTO.getIndustryId()))
+                    .orElseThrow(() -> new ResourceNotFoundException("Industry", "id", paymentRequestDTO.getIndustryId()));
+
+            double amount = paymentRequestDTO.getAmount();
+            int totalAmountInPaise = (int) (amount * 100);
+
             JSONObject orderRequest = new JSONObject();
             orderRequest.put("amount", totalAmountInPaise);
             orderRequest.put("currency", paymentRequestDTO.getCurrency());
@@ -75,10 +76,14 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("Payment entity saved with ID: {}", savedPayment.getId());
 
             return paymentToDto(savedPayment);
-
         } catch (RazorpayException e) {
             log.error("Error while creating order with Razorpay: {}", e.getMessage(), e);
-            throw new Exception("Failed to create order with Razorpay", e);
+            throw new PaymentProcessingException("Failed to create order with Razorpay: " + e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while creating payment order: {}", e.getMessage(), e);
+            throw new PaymentProcessingException("Unexpected error while creating payment order: " + e.getMessage());
         }
     }
 

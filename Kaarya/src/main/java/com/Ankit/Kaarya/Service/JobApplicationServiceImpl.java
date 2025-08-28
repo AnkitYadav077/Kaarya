@@ -38,58 +38,70 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     @Override
     @CacheEvict(value = {"userApplications", "applicationStats"}, key = "#userId")
     public JobApplicationDto applyForJob(Long jobId, Long userId) {
-        List<ApplicationStatus> activeStatuses = Arrays.asList(
-                ApplicationStatus.PENDING,
-                ApplicationStatus.APPROVED
-        );
+        try {
+            List<ApplicationStatus> activeStatuses = Arrays.asList(
+                    ApplicationStatus.PENDING,
+                    ApplicationStatus.APPROVED
+            );
 
-        if (jobApplicationRepo.existsByUsersUserIdAndStatusIn(userId, activeStatuses)) {
-            throw new RuntimeException("You already have an active job application. Please wait until it's resolved.");
+            if (jobApplicationRepo.existsByUsersUserIdAndStatusIn(userId, activeStatuses)) {
+                throw new InvalidStatusException("You already have an active job application. Please wait until it's resolved.");
+            }
+
+            Jobs job = jobRepo.findById(Math.toIntExact(jobId))
+                    .orElseThrow(() -> new ResourceNotFoundException("Job", "id", jobId));
+            Users user = userRepo.findById(Math.toIntExact(userId))
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+            JobApplication application = new JobApplication();
+            application.setJobs(job);
+            application.setUsers(user);
+            application.setAppliedDate(LocalDateTime.now());
+            application.setStatus(ApplicationStatus.PENDING);
+            application.setIndustry(job.getIndustry());
+            application.setPayAmount(job.getPayAmount());
+
+            JobApplication saved = jobApplicationRepo.save(application);
+            return convertToDto(saved);
+        } catch (ResourceNotFoundException | InvalidStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error applying for job: " + e.getMessage(), e);
         }
-
-        Jobs job = jobRepo.findById(Math.toIntExact(jobId))
-                .orElseThrow(() -> new ResourceNotFoundException("Job", "id", jobId));
-        Users user = userRepo.findById(Math.toIntExact(userId))
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-
-        JobApplication application = new JobApplication();
-        application.setJobs(job);
-        application.setUsers(user);
-        application.setAppliedDate(LocalDateTime.now());
-        application.setStatus(ApplicationStatus.PENDING);
-        application.setIndustry(job.getIndustry());
-        application.setPayAmount(job.getPayAmount());
-
-        JobApplication saved = jobApplicationRepo.save(application);
-        return convertToDto(saved);
     }
 
     @Override
     @CacheEvict(value = {"applications", "userApplications"}, allEntries = true)
     public JobApplicationDto approveApplication(Long applicationId) {
-        JobApplication application = jobApplicationRepo.findById(applicationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
+        try {
+            JobApplication application = jobApplicationRepo.findById(applicationId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
 
-        Jobs job = application.getJobs();
-        int maxAllowed = job.getRequiredWorkers();
-        int approvedCount = jobApplicationRepo.countApprovedApplicationsByJobId(job.getJobId());
+            Jobs job = application.getJobs();
+            int maxAllowed = job.getRequiredWorkers();
+            int approvedCount = jobApplicationRepo.countApprovedApplicationsByJobId(job.getJobId());
 
-        if (approvedCount >= maxAllowed) {
-            List<JobApplication> pendingApplications = jobApplicationRepo.findByJobsJobIdAndStatus(
-                    job.getJobId(), ApplicationStatus.PENDING);
+            if (approvedCount >= maxAllowed) {
+                List<JobApplication> pendingApplications = jobApplicationRepo.findByJobsJobIdAndStatus(
+                        job.getJobId(), ApplicationStatus.PENDING);
 
-            for (JobApplication app : pendingApplications) {
-                app.setStatus(ApplicationStatus.REJECTED);
-                jobApplicationRepo.save(app);
+                for (JobApplication app : pendingApplications) {
+                    app.setStatus(ApplicationStatus.REJECTED);
+                    jobApplicationRepo.save(app);
+                }
+
+                throw new InvalidStatusException("All positions filled. Application rejected");
             }
 
-            throw new RuntimeException("All positions filled. Application rejected");
+            application.setStatus(ApplicationStatus.APPROVED);
+            JobApplication saved = jobApplicationRepo.save(application);
+            chatService.createChatRoom(application);
+            return convertToDto(saved);
+        } catch (ResourceNotFoundException | InvalidStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error approving application: " + e.getMessage(), e);
         }
-
-        application.setStatus(ApplicationStatus.APPROVED);
-        JobApplication saved = jobApplicationRepo.save(application);
-        chatService.createChatRoom(application);
-        return convertToDto(saved);
     }
 
     @Override
@@ -130,24 +142,23 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     }
 
     @Override
-    @CacheEvict(value = {"applications", "userApplications"}, allEntries = true)
     public PaymentDto initiatePayment(Long applicationId) {
-        JobApplication application = jobApplicationRepo.findById(applicationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
-
-        if (application.getStatus() != ApplicationStatus.COMPLETED) {
-            throw new InvalidStatusException(
-                    "Only COMPLETED applications can be paid. Current status: " + application.getStatus()
-            );
-        }
-
-        PaymentDto paymentDto = new PaymentDto();
-        paymentDto.setAmount(application.getPayAmount());
-        paymentDto.setCurrency("INR");
-        paymentDto.setIndustryId(application.getJobs().getIndustry().getIndustryId());
-        paymentDto.setJobApplicationId(applicationId);
-
         try {
+            JobApplication application = jobApplicationRepo.findById(applicationId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
+
+            if (application.getStatus() != ApplicationStatus.COMPLETED) {
+                throw new InvalidStatusException(
+                        "Only COMPLETED applications can be paid. Current status: " + application.getStatus()
+                );
+            }
+
+            PaymentDto paymentDto = new PaymentDto();
+            paymentDto.setAmount(application.getPayAmount());
+            paymentDto.setCurrency("INR");
+            paymentDto.setIndustryId(application.getJobs().getIndustry().getIndustryId());
+            paymentDto.setJobApplicationId(applicationId);
+
             PaymentDto createdPayment = paymentService.createPaymentOrder(paymentDto);
 
             Payment payment = modelMapper.map(createdPayment, Payment.class);
@@ -159,10 +170,13 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
             createdPayment.setPaymentId(payment.getPaymentId());
             return createdPayment;
+        } catch (ResourceNotFoundException | InvalidStatusException | PaymentProcessingException e) {
+            throw e;
         } catch (Exception e) {
-            throw new PaymentProcessingException("Failed to create payment order: " + e.getMessage());
+            throw new PaymentProcessingException("Failed to initiate payment: " + e.getMessage());
         }
     }
+
 
     @Override
     @Cacheable(value = "completedApplications", key = "#userId")
