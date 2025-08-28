@@ -14,6 +14,11 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - kaarya_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7.0-alpine
@@ -59,9 +64,12 @@ services:
       dockerfile: Dockerfile
     container_name: kaarya_app
     depends_on:
-      - mysql
-      - redis
-      - kafka
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/kaarya
       SPRING_DATASOURCE_USERNAME: root

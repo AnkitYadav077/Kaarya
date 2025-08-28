@@ -15,7 +15,7 @@ public class IndustryDto {
     private Long industryId;
 
     @NotBlank(message = "Name is mandatory")
-    @Size(min = 3, max = 20, message = "Name must be between 3 and 20 characters")
+    @Size(min = 3, max = 50, message = "Name must be between 3 and 50 characters")
     private String name;
 
     @NotBlank(message = "Email is mandatory")

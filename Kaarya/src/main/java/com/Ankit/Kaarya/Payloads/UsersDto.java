@@ -20,7 +20,7 @@ public class UsersDto {
     private Long userId;
 
     @NotBlank(message = "Name is mandatory")
-    @Size(min = 3, max = 15, message = "Name must be between 3 and 15 characters")
+    @Size(min = 3, max = 30, message = "Name must be between 3 and 30 characters")
     private String name;
 
     @NotBlank(message = "Contact number is mandatory")
