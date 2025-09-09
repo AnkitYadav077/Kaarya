@@ -35,6 +35,11 @@ public class IndustryServiceImpl implements IndustryService {
     @CacheEvict(value = "industries", allEntries = true)
     public IndustryDto registerIndustry(IndustryDto industryDto, String role) {
         try {
+            // Check if email already exists
+            if (industryRepo.existsByEmail(industryDto.getEmail())) {
+                throw new RuntimeException("Email already registered: " + industryDto.getEmail());
+            }
+
             Industry industry = dtoToIndustry(industryDto);
             industry.setRole(role);
             Industry savedIndustry = industryRepo.save(industry);

@@ -13,7 +13,9 @@ import java.util.List;
  * Entity class representing the Industry table.
  */
 @Entity
-@Table(name = "INDUSTRY")
+@Table(name = "INDUSTRY", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "EMAIL")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,7 +31,7 @@ public class Industry {
     private String name;
 
 
-    @Column(name = "EMAIL")
+    @Column(name = "EMAIL",unique = true)
     private String email;
 
 

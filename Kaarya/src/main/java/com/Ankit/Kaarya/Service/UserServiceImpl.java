@@ -30,6 +30,11 @@ public class UserServiceImpl implements UserService {
     @Override
     @CacheEvict(value = "users", allEntries = true)
     public UsersDto registerUser(UsersDto usersDto, String role) {
+        // Check if phone number already exists
+        if (userRepo.existsByPhoneNo(usersDto.getPhoneNo())) {
+            throw new RuntimeException("Phone number already registered: " + usersDto.getPhoneNo());
+        }
+
         Users user = dtoToUsers(usersDto);
         user.setRole(role);
         Users savedUser = userRepo.save(user);

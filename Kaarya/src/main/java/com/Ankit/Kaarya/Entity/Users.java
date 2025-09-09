@@ -16,7 +16,9 @@ import java.util.List;
 
 
 @Entity
-@Table(name = "USERS")
+@Table(name = "USERS", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "CONTACT NO.")
+})
 @Getter
 @Setter
 @AllArgsConstructor
@@ -33,7 +35,7 @@ public class Users {
     private String name;
 
 
-    @Column(name = "CONTACT NO.")
+    @Column(name = "CONTACT NO.",unique = true)
     private String phoneNo;
 
 

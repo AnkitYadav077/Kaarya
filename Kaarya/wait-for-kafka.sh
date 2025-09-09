@@ -11,4 +11,5 @@ while ! nc -z "$host" "$port"; do
 done
 
 echo "$host:$port is available, starting application."
+# shellcheck disable=SC2145
 exec "$@"
