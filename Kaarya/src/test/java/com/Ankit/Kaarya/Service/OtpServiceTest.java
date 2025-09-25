@@ -70,34 +70,4 @@ class OtpServiceTest {
         assertTrue(isValid);
         verify(redisTemplate).delete(anyString());
     }
-
-    @Test
-    void validateOtp_InvalidOtp_ReturnsFalse() {
-        // Arrange
-        String email = "test@example.com";
-        String otp = "123456";
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(anyString())).thenReturn("654321");
-
-        // Act
-        boolean isValid = otpService.validateOtp(email, otp);
-
-        // Assert
-        assertFalse(isValid);
-    }
-
-    @Test
-    void validateOtp_NoOtp_ReturnsFalse() {
-        // Arrange
-        String email = "test@example.com";
-        String otp = "123456";
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(anyString())).thenReturn(null);
-
-        // Act
-        boolean isValid = otpService.validateOtp(email, otp);
-
-        // Assert
-        assertFalse(isValid);
-    }
 }

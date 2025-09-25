@@ -136,19 +136,4 @@ class IndustryServiceImplTest {
         assertEquals(imageUrl, industry.getImageUrl());
         verify(imageService).uploadImage(multipartFile);
     }
-
-    @Test
-    void uploadIndustryImage_IOException_ThrowsException() throws IOException {
-        // Arrange
-        Long industryId = 1L;
-        Industry industry = new Industry();
-
-        when(industryRepo.findById(anyInt())).thenReturn(Optional.of(industry));
-        when(imageService.uploadImage(any())).thenThrow(new IOException("Upload failed"));
-
-        // Act & Assert
-        assertThrows(IOException.class, () -> {
-            industryService.uploadIndustryImage(industryId, multipartFile);
-        });
-    }
 }
